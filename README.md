@@ -51,7 +51,11 @@ Keep the key out of chats and tool arguments. You can revoke it any time in your
 
 Only a `cordis.patch.yml` that points DSH's official MCP client (`@deepseek-ai/dsh-mcp-client`) at `https://mcp.knowra.app/mcp`. No code runs on your machine. Knowra receives only the tool requests your agent sends, not your conversation. See the [privacy policy](https://knowra.app/privacy).
 
-Support: support@knowra.app
+## Contact
+
+- Email: support@knowra.app
+- X: [@knowra_app](https://x.com/knowra_app)
+- Issues: [GitHub Issues](https://github.com/Rexopia/dsh-plugin-knowra/issues)
 
 ---
 
@@ -67,3 +71,5 @@ Support: support@knowra.app
 - 桌面版：把上面英文部分的 YAML 写进 `~/.dsh/cordis.patch.yml`（`Bearer ` 后面换成你的 key），重启 DSH
 
 不要把 key 发在对话里或写进工具参数；随时可以在账户页撤销。
+
+**联系我们**：support@knowra.app · X [@knowra_app](https://x.com/knowra_app) · [GitHub Issues](https://github.com/Rexopia/dsh-plugin-knowra/issues)
