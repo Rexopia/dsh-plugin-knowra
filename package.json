@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-knowra",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Knowra for DeepSeek Harness: search arXiv papers by topic, author or exact dates, and read Scout reports on methods, evidence and limitations.",
   "license": "MIT",
   "author": "Knowra <support@knowra.app>",

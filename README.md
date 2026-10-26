@@ -28,7 +28,7 @@ Try: *"Find papers on memory for LLM agents from the past week, shortlist the re
 
 ## Scout: add your API key
 
-Search works right away. To read Scout reports, create a personal API key in your [Knowra account](https://knowra.app/account) (free accounts include 5 first-time Scout reads per UTC day; re-reading a paper is free).
+Search works right away. To read Scout reports, create a personal API key in your [Knowra account](https://knowra.app/account). Need more Scout reads? You can upgrade to [Pro](https://knowra.app/pricing).
 
 - **Terminal**: export the key before starting DSH:
   ```sh
@@ -66,7 +66,7 @@ Only a `cordis.patch.yml` that points DSH's official MCP client (`@deepseek-ai/d
 
 **安装**：DSH → 插件 → 添加插件，填 `dsh-plugin-knowra`，点安装，然后重启 DSH。
 
-**检索**不需要账号，装好即可用。**读 Scout** 需要在 [Knowra 账户页](https://knowra.app/account)创建个人 API key（免费账户每个 UTC 日 5 次首次读取，重复读取免费）：
+**检索**不需要账号，装好即可用。**读 Scout** 需要在 [Knowra 账户页](https://knowra.app/account)创建个人 API key；需要更多 Scout 可以升级 [Pro](https://knowra.app/pricing)：
 
 - 命令行启动：先 `export KNOWRA_API_KEY=你的key`
 - 桌面版：把上面英文部分的 YAML 写进 `~/.dsh/cordis.patch.yml`（`Bearer ` 后面换成你的 key），重启 DSH
