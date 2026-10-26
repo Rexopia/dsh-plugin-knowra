@@ -55,7 +55,7 @@ Only a `cordis.patch.yml` that points DSH's official MCP client (`@deepseek-ai/d
 
 - Email: support@knowra.app
 - X: [@knowra_app](https://x.com/knowra_app)
-- Xiaohongshu (小红书): Knowra, ID `knowra_app`
+- Xiaohongshu (小红书): [Knowra](https://xhslink.cn/o/3hsTWQKz9pf), ID `knowra_app`
 - Issues: [GitHub Issues](https://github.com/Rexopia/dsh-plugin-knowra/issues)
 
 ---
@@ -73,4 +73,4 @@ Only a `cordis.patch.yml` that points DSH's official MCP client (`@deepseek-ai/d
 
 不要把 key 发在对话里或写进工具参数；随时可以在账户页撤销。
 
-**联系我们**：support@knowra.app · X [@knowra_app](https://x.com/knowra_app) · 小红书 Knowra（小红书号 knowra_app） · [GitHub Issues](https://github.com/Rexopia/dsh-plugin-knowra/issues)
+**联系我们**：support@knowra.app · X [@knowra_app](https://x.com/knowra_app) · 小红书 [Knowra](https://xhslink.cn/o/3hsTWQKz9pf)（小红书号 knowra_app） · [GitHub Issues](https://github.com/Rexopia/dsh-plugin-knowra/issues)
