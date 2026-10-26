@@ -1,0 +1,40 @@
+{
+  "name": "dsh-plugin-knowra",
+  "version": "0.1.0",
+  "description": "Knowra for DeepSeek Harness: search arXiv papers by topic, author or exact dates, and read Scout reports on methods, evidence and limitations.",
+  "license": "MIT",
+  "author": "Knowra <support@knowra.app>",
+  "homepage": "https://knowra.app/mcp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rexopia/dsh-plugin-knowra.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Rexopia/dsh-plugin-knowra/issues",
+    "email": "support@knowra.app"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "cordis.patch.yml",
+    "icon.png",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "mcp",
+    "arxiv",
+    "papers",
+    "research",
+    "literature-search"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-mcp-client": ">=0.0.1-rc.1"
+  }
+}

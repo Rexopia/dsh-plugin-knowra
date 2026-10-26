@@ -1,0 +1,12 @@
+# One mcp-client entry pointing at the hosted Knowra MCP server.
+# Tools register as mcp__knowra__search_papers, mcp__knowra__get_scout and mcp__knowra__get_usage.
+# Search works without a key. Scout and usage read KNOWRA_API_KEY (a personal API key from your Knowra account).
+- insert:
+    - id: mcp-knowra
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: knowra
+        transport: streamable-http
+        url: https://mcp.knowra.app/mcp?s=dsh-plugin
+        # Send Authorization only when a key is set: an empty "Bearer" header is rejected and disconnects the server.
+        headers: !!js 'process.env.KNOWRA_API_KEY ? { Authorization: `Bearer ${process.env.KNOWRA_API_KEY}` } : {}'
