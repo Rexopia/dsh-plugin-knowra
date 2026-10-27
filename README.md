@@ -30,7 +30,7 @@ Try: *"Find papers on memory for LLM agents from the past week, shortlist the re
 
 ## Connect your Knowra account
 
-Search works right away without an account. To read Scout reports, connect your existing Knowra account from the plugin page. Need more Scout reads? You can upgrade to [Pro](https://knowra.app/pricing).
+Search works right away without an account. To read Scout reports, connect your existing Knowra account from the plugin page.
 
 - Authorization uses OAuth with PKCE. You never paste a key or token into DSH or a chat.
 - Tokens are stored by DSH's credential service and refreshed automatically. Your connection survives restarts.
@@ -74,7 +74,7 @@ For a local Web profile, install the resulting tarball with `dsh plugin --profil
 
 **安装**：需要 DSH **0.2.1-rc.3 或更新的 0.2.x 版本**。DSH → 插件 → 添加插件，填 `dsh-plugin-knowra`，安装并启用。
 
-**检索**不需要账号，装好即可用。**读 Scout**：打开「插件 → Knowra」，点击「连接 Knowra」，在浏览器中登录并允许授权，然后返回 DSH。浏览器未自动打开时，点击插件页的授权链接。需要更多 Scout 可以升级 [Pro](https://knowra.app/pricing)。
+**检索**不需要账号，装好即可用。**读 Scout**：打开「插件 → Knowra」，点击「连接 Knowra」，在浏览器中登录并允许授权，然后返回 DSH。浏览器未自动打开时，点击插件页的授权链接。
 
 授权自动续期，重启后仍可使用；点击「断开连接」可取消登录或撤销连接。本版本支持桌面端和同机运行的 Web UI，浏览器必须能访问 DSH 所在电脑的本机回调地址。
 
