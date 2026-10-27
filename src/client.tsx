@@ -85,7 +85,7 @@ export function KnowraPage({ remote: api, language }: PageProps) {
     {error && <p role="alert">{t.unavailable}</p>}
     {state?.server === 'unavailable' && <p>{t.server}</p>}
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-      {state?.status !== 'connected' && <button type="button" disabled={busy} onClick={() => void connect()}>{t.connect}</button>}
+      {state?.status === 'disconnected' && <button type="button" disabled={busy} onClick={() => void connect()}>{t.connect}</button>}
       {state && state.status !== 'disconnected' && <button type="button" disabled={busy} onClick={() => void disconnect()}>{t.disconnect}</button>}
       {!state && error && <button type="button" disabled={busy} onClick={() => void read().catch(() => setError(true))}>{t.retry}</button>}
     </div>
