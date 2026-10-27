@@ -2,38 +2,60 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { build } from 'esbuild'
 import { chromium } from 'playwright'
 
-test('desktop client factory renders account settings, browser authorization, polling and disconnect', async t => {
+test('built desktop page uses real Cordis injection and DSH Remote for status, authorization and disconnect', async t => {
+  const require = createRequire(import.meta.url)
   const harness = await build({
     stdin: { contents: `
       import * as React from 'react';
       import * as jsx from 'react/jsx-runtime';
       import { createRoot } from 'react-dom/client';
       import * as Cordis from '@deepseek-ai/cordis';
+      import { TypertRegistry } from '@deepseek-ai/dsh-typert-registry';
+      import * as ClientGateway from ${JSON.stringify(require.resolve('@deepseek-ai/dsh-api-gateway/client'))};
       const seed = { react: React, 'react/jsx-runtime': jsx, '@deepseek-ai/cordis': Cordis };
       window.testState = { status: 'disconnected', notice: null, server: 'ready' };
       window.testCalls = [];
       window.testFailures = false;
-      const remote = {
-        $mount: async contribution => { window.descriptors = contribution.descriptors.map(x => x.namespace + '/' + x.method); return async () => {}; },
-        knowra: {
-          status: async () => window.testFailures ? { ok: false, error: { code: 'gateway/internal' } } : { ok: true, value: window.testState },
-          connect: async () => { window.testCalls.push('connect'); window.testState = { ...window.testState, status: 'authorizing' }; return { ok: true, value: { authorizationUrl: 'https://oauth.knowra.app/oauth/authorize?test=1' } }; },
-          disconnect: async () => { window.testCalls.push('disconnect'); window.testState = { ...window.testState, status: 'disconnected' }; return { ok: true, value: window.testState }; },
-        }
-      };
       window.__ModuleLoader__ = { load: entry => {
         const module = entry.factory(id => { if (!(id in seed)) throw new Error('Unknown external: ' + id); return seed[id]; });
-        const ctx = {
-          remote, locale: { language: 'zh' }, effect: setup => setup(),
-          slots: {
-            inject: (name, mount) => mount(),
-            register: (entry, Component) => { window.slot = entry.key; createRoot(document.getElementById('root')).render(React.createElement(Component, entry.inject())); },
+        const ctx = new Cordis.Context();
+        window.testContext = ctx;
+        ctx.provide('connection', {
+          interactions: 'none', isLoopback: true,
+          generation: { getSnapshot: () => undefined },
+          rpc: {
+            open: () => { throw new Error('No streams in this test'); },
+            call: async (_channel, endpoint) => {
+              if (window.testFailures) return { ok: false, error: { code: 'gateway/internal', message: 'Test carrier unavailable', details: {} } };
+              if (endpoint === 'knowra/status') return { ok: true, value: window.testState };
+              if (endpoint === 'knowra/connect') {
+                window.testCalls.push('connect'); window.testState = { ...window.testState, status: 'authorizing' };
+                return { ok: true, value: { authorizationUrl: 'https://oauth.knowra.app/oauth/authorize?test=1' } };
+              }
+              if (endpoint === 'knowra/disconnect') {
+                window.testCalls.push('disconnect'); window.testState = { ...window.testState, status: 'disconnected' };
+                return { ok: true, value: window.testState };
+              }
+              throw new Error('Unexpected endpoint: ' + endpoint);
+            },
           },
-        };
-        module.apply(ctx);
+        });
+        ctx.provide('slots', {
+          inject: (name, mount) => mount(),
+          register: (entry, Component) => { window.slot = entry.key; createRoot(document.getElementById('root')).render(React.createElement(Component, entry.inject())); return () => {}; },
+        });
+        (async () => {
+          await ctx.plugin(TypertRegistry).await();
+          await ctx.plugin(ClientGateway).await();
+          // A real plugin fiber enforces remote.knowra injection; invoking the
+          // component from the root Context would silently bypass this check.
+          await ctx.plugin({ ...module, name: 'knowra-browser-test' }).await();
+          window.descriptors = ctx.typert.remotes.list().map(x => x.namespace + '/' + x.method);
+        })().catch(error => { window.testStartupError = error.message; console.error(error); });
       } };
     `, resolveDir: process.cwd(), loader: 'js' },
     bundle: true, platform: 'browser', format: 'iife', write: false,

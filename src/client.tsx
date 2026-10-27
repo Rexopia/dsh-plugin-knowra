@@ -101,8 +101,14 @@ export async function apply(context: Context): Promise<void> {
   }
   const disposeRemote = await ctx.remote.$mount(remote)
   ctx.effect(() => disposeRemote)
-  ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
-    name: 'plugins.bundle.config', key: 'dsh-plugin-knowra',
-    inject: () => ({ remote: ctx.remote, language: () => document.documentElement.lang || navigator.language }),
-  }, KnowraPage))
+  // $mount creates this namespace. Wait for it in a child fiber so Cordis
+  // permits the page's callbacks to access remote.knowra. Declaring it in the
+  // root inject list would deadlock before $mount can create the service.
+  await ctx.inject(['remote.knowra'], context => {
+    const page = context as typeof ctx
+    page.slots.inject('plugins.bundle.config', () => page.slots.register({
+      name: 'plugins.bundle.config', key: 'dsh-plugin-knowra',
+      inject: () => ({ remote: page.remote, language: () => document.documentElement.lang || navigator.language }),
+    }, KnowraPage))
+  }).await()
 }

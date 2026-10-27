@@ -29,7 +29,7 @@ export class KnowraBridge {
 
   private async open(): Promise<Client> {
     this.state = 'connecting'
-    const client = new Client({ name: 'dsh-plugin-knowra', version: '0.2.0' })
+    const client = new Client({ name: 'dsh-plugin-knowra', version: '0.2.1' })
     this.pendingClient = client
     const transport = new StreamableHTTPClientTransport(new URL(this.url), {
       authProvider: this.oauth.transportAuth(), fetch: this.oauth.fetch,

@@ -55,9 +55,9 @@ npm test
 npm pack
 ```
 
-Tests exercise real local HTTP authorization/token endpoints, PKCE/state validation, refresh-token rotation, restart recovery, revocation, DSH credential persistence and strict Remote descriptors, MCP tool calls, and the built browser module in headless Chromium. They use isolated fixtures and do not contact real accounts. `npm pack` builds the host and browser artifacts before packaging; installing the tarball requires no build scripts.
+Tests exercise real local HTTP authorization/token endpoints, PKCE/state validation, refresh-token rotation, restart recovery, revocation, DSH credential persistence and strict Remote descriptors, MCP tool calls, and the built browser module in headless Chromium with DSH's real Remote service and Cordis dependency checks. They use isolated fixtures and do not contact real accounts. `npm pack` builds the host and browser artifacts before packaging; installing the tarball requires no build scripts.
 
-For a local Web profile, install the resulting tarball with `dsh plugin --profile web add /absolute/path/dsh-plugin-knowra-0.2.0.tgz`. Desktop uses its own profile: install through its Plugins page, or fully quit Desktop and use the Desktop-provided CLI with `--profile desktop`. A fresh real Desktop connection still needs sign-in and approval through the deployed Knowra page.
+For a local Web profile, install the resulting tarball with `dsh plugin --profile web add /absolute/path/dsh-plugin-knowra-0.2.1.tgz`. Desktop uses its own profile: install through its Plugins page, or fully quit Desktop and use the Desktop-provided CLI with `--profile desktop`. A fresh real Desktop connection still needs sign-in and approval through the deployed Knowra page.
 
 ## Contact
 
