@@ -130,10 +130,10 @@ test('offline disconnect still clears local credentials and reports pending remo
 
 test('timeout closes the callback listener and allows a fresh attempt', async t => {
   const server = await fixture()
-  const oauth = new KnowraOAuth(new MemoryStore(), { resource: `${server.base}/mcp`, issuer: server.base, authorizationTimeoutMs: 100 })
+  const oauth = new KnowraOAuth(new MemoryStore(), { resource: `${server.base}/mcp`, issuer: server.base, authorizationTimeoutMs: 500 })
   t.after(async () => { oauth.dispose(); await server.close() })
   const old = await oauth.start()
-  await new Promise(resolve => setTimeout(resolve, 150))
+  await new Promise(resolve => setTimeout(resolve, 600))
   assert.deepEqual(await oauth.state(), { status: 'disconnected', notice: 'expired' })
   const fresh = await oauth.start()
   assert.notEqual(fresh.authorizationUrl, old.authorizationUrl)

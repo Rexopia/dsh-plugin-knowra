@@ -3,11 +3,16 @@ import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { build } from 'esbuild'
 import { chromium } from 'playwright'
 
 test('built desktop page uses real Cordis injection and DSH Remote for status, authorization and disconnect', async t => {
   const require = createRequire(import.meta.url)
+  const gatewayPath = require.resolve('@deepseek-ai/dsh-api-gateway/client')
+  const gatewaySource = await readFile(gatewayPath, 'utf8')
+  const wrappedGateway = gatewaySource.trimStart().startsWith('window.__ModuleLoader__.load(')
   const harness = await build({
     stdin: { contents: `
       import * as React from 'react';
@@ -15,18 +20,21 @@ test('built desktop page uses real Cordis injection and DSH Remote for status, a
       import { createRoot } from 'react-dom/client';
       import * as Cordis from '@deepseek-ai/cordis';
       import { TypertRegistry } from '@deepseek-ai/dsh-typert-registry';
-      import * as ClientGateway from ${JSON.stringify(require.resolve('@deepseek-ai/dsh-api-gateway/client'))};
+      ${wrappedGateway ? 'let ClientGateway;' : `import * as ClientGateway from ${JSON.stringify(gatewayPath)};`}
       const seed = { react: React, 'react/jsx-runtime': jsx, '@deepseek-ai/cordis': Cordis };
       window.testState = { status: 'disconnected', notice: null, server: 'ready' };
       window.testCalls = [];
       window.testFailures = false;
       window.__ModuleLoader__ = { load: entry => {
         const module = entry.factory(id => { if (!(id in seed)) throw new Error('Unknown external: ' + id); return seed[id]; });
+        ${wrappedGateway ? "if (entry.id === '@deepseek-ai/dsh-api-gateway') { ClientGateway = module; return; }" : ''}
         const ctx = new Cordis.Context();
         window.testContext = ctx;
         ctx.provide('connection', {
           interactions: 'none', isLoopback: true,
           generation: { getSnapshot: () => undefined },
+          registerGenerationSource: () => () => {},
+          start: () => ({ stop() {} }),
           rpc: {
             open: () => { throw new Error('No streams in this test'); },
             call: async (_channel, endpoint) => {
@@ -57,6 +65,7 @@ test('built desktop page uses real Cordis injection and DSH Remote for status, a
           window.descriptors = ctx.typert.remotes.list().map(x => x.namespace + '/' + x.method);
         })().catch(error => { window.testStartupError = error.message; console.error(error); });
       } };
+      ${wrappedGateway ? gatewaySource : ''}
     `, resolveDir: process.cwd(), loader: 'js' },
     bundle: true, platform: 'browser', format: 'iife', write: false,
   })
@@ -77,7 +86,11 @@ test('built desktop page uses real Cordis injection and DSH Remote for status, a
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await page.goto(`http://127.0.0.1:${(server.address() as { port: number }).port}`)
-  await page.getByText('尚未连接', { exact: true }).waitFor()
+  await page.waitForFunction(() => (window as any).testStartupError || document.getElementById('root')?.textContent?.includes('尚未连接'))
+  assert.equal(await page.evaluate(() => (window as any).testStartupError), undefined)
+  await page.getByText('尚未连接', { exact: true }).waitFor().catch(async error => {
+    throw new Error(`Page startup failed: ${JSON.stringify({ errors, startup: await page.evaluate(() => (window as any).testStartupError) })}`, { cause: error })
+  })
   assert.deepEqual(await page.evaluate(() => (window as any).descriptors), ['knowra/status', 'knowra/connect', 'knowra/disconnect'])
   assert.equal(await page.evaluate(() => (window as any).slot), 'dsh-plugin-knowra')
   // Keep browser authorization inside this isolated test; never navigate to a real account.
@@ -90,7 +103,7 @@ test('built desktop page uses real Cordis injection and DSH Remote for status, a
   await page.evaluate(() => { (window as any).testState.status = 'connected' })
   await page.getByText('已连接 Knowra', { exact: true }).waitFor()
   assert.equal(await page.getByRole('link', { name: '在浏览器中继续授权' }).count(), 0)
-  await page.screenshot({ path: '/tmp/knowra-dsh-oauth-settings.png' })
+  await page.screenshot({ path: join(tmpdir(), 'knowra-dsh-oauth-settings.png') })
   await page.getByRole('button', { name: '断开连接' }).click()
   await page.getByText('尚未连接', { exact: true }).waitFor()
   assert.equal(await page.getByRole('button', { name: '连接 Knowra', exact: true }).count(), 1)

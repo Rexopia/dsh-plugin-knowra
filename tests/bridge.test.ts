@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import type { Context } from '@deepseek-ai/cordis'
-import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { KnowraOAuth } from '../src/oauth.ts'
 import { KnowraBridge } from '../src/bridge.ts'
 import { fixture, MemoryStore } from './fixture.ts'
@@ -23,7 +23,7 @@ test('native tool adapter: anonymous search, OAuth Scout/usage, refresh on 401, 
   await bridge.connect()
   assert.equal(bridge.state, 'ready')
   assert.deepEqual([...definitions.keys()].sort(), ['mcp__knowra__get_scout', 'mcp__knowra__get_usage', 'mcp__knowra__search_papers'])
-  const exec = { signal: new AbortController().signal } as ToolRunContext
+  const exec = { signal: new AbortController().signal } as Parameters<ToolDefinition['execute']>[1]
   const call = (name: string) => definitions.get(`mcp__knowra__${name}`)!.execute({}, exec)
   assert.deepEqual(await call('search_papers'), { content: [{ type: 'text', text: 'papers' }] })
   await assert.rejects(call('get_usage'), /Connect Knowra/)
