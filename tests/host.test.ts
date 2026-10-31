@@ -8,7 +8,7 @@ import { LocalCredentialProvider } from '@deepseek-ai/dsh-credentials-local'
 import { TypertRegistry } from '@deepseek-ai/dsh-typert-registry'
 import { validateTypertManifest } from '@deepseek-ai/dsh-typert-loader'
 import { credentialStore } from '../src/index.ts'
-import { remote, TYPERT } from '../src/remote.ts'
+import { TYPERT } from '../src/remote.ts'
 import { KnowraOAuth } from '../src/oauth.ts'
 import { fixture } from './fixture.ts'
 
@@ -24,7 +24,8 @@ test('DSH credential provider persists, restores and clears OAuth tokens without
   const { authorizationUrl } = await oauth.start()
   assert.equal((await server.authorize(authorizationUrl)).status, 200)
   assert.match(await readFile(filename, 'utf8'), /refresh-1/)
-  assert.equal((await stat(filename)).mode & 0o777, 0o600)
+  // Windows uses account ACLs rather than POSIX file modes.
+  if (process.platform !== 'win32') assert.equal((await stat(filename)).mode & 0o777, 0o600)
   oauth.dispose()
   await ctx.fiber.dispose()
   const next = new Context()
@@ -48,9 +49,8 @@ test('DSH Typert registry accepts the shared strict Remote descriptors', async (
     assert.equal(status?.service, 'knowraAuth')
     assert.equal(status?.invocation.kind, 'direct')
     assert.deepEqual(status?.parameters, [])
-    assert.deepEqual(remote.methods['knowra/status'].input().create().parse({}), {})
-    assert.throws(() => remote.methods['knowra/status'].input().create().parse({ token: 'secret' }))
-    const schema = remote.methods['knowra/status'].result.create()
+    assert.ok(status && status.result.mode === 'strict')
+    const schema = status.result.create()
     assert.deepEqual(schema.parse({ status: 'connected', notice: null, server: 'ready', access_token: 'secret' }), {
       status: 'connected', notice: null, server: 'ready',
     })

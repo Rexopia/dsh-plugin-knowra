@@ -34,10 +34,10 @@ export function KnowraPage({ remote: api, language }: PageProps) {
   const [error, setError] = useState(false)
 
   async function read(signal?: AbortSignal) {
-    const result = await remote.methods['knowra/status'].invoke(api, {}, signal)
+    const result = await api.knowra.status()
     if (signal?.aborted) return
     if (!result.ok) throw new Error('Connection unavailable')
-    const next = result.value as ConnectionState
+    const next = result.value
     setState(next)
     if (next.status !== 'authorizing') setUrl(undefined)
     setError(false)
@@ -58,9 +58,9 @@ export function KnowraPage({ remote: api, language }: PageProps) {
   async function connect() {
     setBusy(true); setError(false)
     try {
-      const result = await remote.methods['knowra/connect'].invoke(api, {})
+      const result = await api.knowra.connect()
       if (!result.ok) throw new Error('Connection unavailable')
-      const target = (result.value as { authorizationUrl: string }).authorizationUrl
+      const target = result.value.authorizationUrl
       if (new URL(target).origin !== 'https://oauth.knowra.app') throw new Error('Invalid authorization URL')
       setUrl(target)
       window.open(target, '_blank', 'noopener,noreferrer')
@@ -71,9 +71,9 @@ export function KnowraPage({ remote: api, language }: PageProps) {
   async function disconnect() {
     setBusy(true); setError(false)
     try {
-      const result = await remote.methods['knowra/disconnect'].invoke(api, {})
+      const result = await api.knowra.disconnect()
       if (!result.ok) throw new Error('Connection unavailable')
-      setState(result.value as ConnectionState); setUrl(undefined)
+      setState(result.value); setUrl(undefined)
     } catch { setError(true) } finally { setBusy(false) }
   }
 

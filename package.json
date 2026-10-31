@@ -1,22 +1,24 @@
 {
   "name": "dsh-plugin-knowra",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
-    "./typert": "./lib/typert.host.js"
+    "./typert": "./lib/typert.host.js",
+    "./package.json": "./package.json"
   },
   "engines": {
-    "dsh": ">=0.2.1-rc.3 <0.3.0"
+    "dsh": ">=0.2.0-rc.2 <0.3.0"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
     "pretest": "npm run build",
     "test": "node --import tsx --test tests/*.test.ts",
     "check": "tsc --noEmit",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "test:compat": "node scripts/test-compat.mjs"
   },
   "description": "Knowra for DeepSeek Harness: search arXiv papers by topic, author or exact dates, and read Scout reports on methods, evidence and limitations.",
   "license": "MIT",
@@ -64,9 +66,9 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.0",
-    "@deepseek-ai/dsh-credentials": ">=0.2.1-rc.3 <0.3.0",
-    "@deepseek-ai/dsh-mcp-client": ">=0.2.1-rc.3 <0.3.0",
-    "@deepseek-ai/dsh-typert-protocol": ">=0.2.1-rc.3 <0.3.0"
+    "@deepseek-ai/dsh-credentials": ">=0.2.0-rc.2 <0.3.0",
+    "@deepseek-ai/dsh-mcp-client": ">=0.2.0-rc.2 <0.3.0",
+    "@deepseek-ai/dsh-typert-protocol": ">=0.2.0-rc.2 <0.3.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.5",

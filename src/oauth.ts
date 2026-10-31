@@ -74,7 +74,7 @@ export class KnowraOAuth {
       const url = new URL(input instanceof Request ? input.url : String(input))
       if (!origins.has(url.origin) || url.username || url.password) throw new Error('Untrusted authorization endpoint')
       const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
-      headers.set('User-Agent', 'dsh-plugin-knowra/0.2.2')
+      headers.set('User-Agent', 'dsh-plugin-knowra/0.2.4')
       const resource = new URL(this.resource)
       // Scout may generate a report during the tool request. Keep its existing
       // two-minute budget; discovery and token requests use the shorter limit.
@@ -293,7 +293,12 @@ export class KnowraOAuth {
 }
 
 export class LoginRequired extends Error {
-  constructor() { super('Connect Knowra from the plugin page to continue.'); this.name = 'LoginRequired' }
+  constructor() {
+    super('A Knowra account is required for Scout reports and usage checks; free accounts include '
+      + '5 new Scout reports per day (resets at 00:00 UTC). OAuth sign-in is available in '
+      + 'Plugins → Knowra → Connect Knowra (connection guide: https://knowra.app/mcp#connect).')
+    this.name = 'LoginRequired'
+  }
 }
 
 function equal(a: string, b: string): boolean {

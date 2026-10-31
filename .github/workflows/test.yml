@@ -16,3 +16,19 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm pack --dry-run
+  compatibility:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        dsh: [0.2.0-rc.2, 0.2.1-rc.3]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:compat -- ${{ matrix.dsh }}
