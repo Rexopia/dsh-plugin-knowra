@@ -2,9 +2,19 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { KnowraOAuth } from '../src/oauth.ts'
+import { KnowraOAuth, LoginRequired } from '../src/oauth.ts'
 import { KnowraBridge } from '../src/bridge.ts'
 import { fixture, MemoryStore } from './fixture.ts'
+
+function loginRequired(error: unknown): boolean {
+  assert.ok(error instanceof LoginRequired)
+  assert.match(error.message, /5 new Scout reports per day/)
+  assert.match(error.message, /00:00 UTC/)
+  assert.match(error.message, /Plugins → Knowra → Connect Knowra/)
+  assert.match(error.message, /https:\/\/knowra\.app\/mcp#connect/)
+  assert.doesNotMatch(error.message, /API key/i)
+  return true
+}
 
 test('native tool adapter: anonymous search, OAuth Scout/usage, refresh on 401, and disconnect', async t => {
   const server = await fixture()
@@ -26,7 +36,9 @@ test('native tool adapter: anonymous search, OAuth Scout/usage, refresh on 401, 
   const exec = { signal: new AbortController().signal } as Parameters<ToolDefinition['execute']>[1]
   const call = (name: string) => definitions.get(`mcp__knowra__${name}`)!.execute({}, exec)
   assert.deepEqual(await call('search_papers'), { content: [{ type: 'text', text: 'papers' }] })
-  await assert.rejects(call('get_usage'), /Connect Knowra/)
+  await assert.rejects(call('get_usage'), loginRequired)
+  await assert.rejects(call('get_scout'), loginRequired)
+  assert.deepEqual(server.stats.calls, ['search_papers'])
   assert.equal(server.stats.registrations, 0)
   const { authorizationUrl } = await oauth.start()
   await server.authorize(authorizationUrl)
@@ -37,7 +49,7 @@ test('native tool adapter: anonymous search, OAuth Scout/usage, refresh on 401, 
   assert.equal(server.stats.refreshes, 1)
   assert.ok(server.stats.headers.includes('Bearer access-2'))
   await oauth.disconnect()
-  await assert.rejects(call('get_scout'), /Connect Knowra/)
+  await assert.rejects(call('get_scout'), loginRequired)
   await call('search_papers')
   await bridge.dispose()
   assert.equal(definitions.size, 0)
