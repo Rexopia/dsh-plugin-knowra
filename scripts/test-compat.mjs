@@ -54,7 +54,7 @@ try {
   const { evaluatePluginCompatibility } = await import(pathToFileURL(hostRequire.resolve('@deepseek-ai/dsh-app-boot')))
   assert.equal(evaluatePluginCompatibility(manifest, {}, version), undefined, 'DSH rejected plugin installation')
   // rc.2 discovers host contracts through this package.json export.
-  assert.equal(hostRequire.resolve('dsh-plugin-knowra/package.json'), await realpath(join(workspace, 'package.json')))
+  assert.equal(await realpath(hostRequire.resolve('dsh-plugin-knowra/package.json')), await realpath(join(workspace, 'package.json')))
   await run(['scripts/build.mjs'], workspace)
   const { TYPERT } = await import(pathToFileURL(join(workspace, 'lib/typert.host.js')))
   assert.equal(TYPERT.invocations.length, 3, 'Built host contract did not load')
