@@ -2,6 +2,8 @@
 
 # dsh-plugin-knowra
 
+[![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/rexopia/dsh-plugin-knowra)
+
 [Knowra](https://knowra.app/mcp) for [DeepSeek Harness](https://www.deepseek.com/harness/): let your agent search arXiv papers by topic, author or exact dates, and read **Scout** reports that lay out each paper's methods, evidence and limitations, so you can decide which papers deserve a close read.
 
 中文说明见[下方](#中文)。
