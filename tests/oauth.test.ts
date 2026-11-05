@@ -138,3 +138,93 @@ test('timeout closes the callback listener and allows a fresh attempt', async t 
   const fresh = await oauth.start()
   assert.notEqual(fresh.authorizationUrl, old.authorizationUrl)
 })
+
+test('separate authorization server completes login, refresh and revocation', async t => {
+  const server = await fixture({ separateIssuer: true })
+  const store = new MemoryStore()
+  const oauth = new KnowraOAuth(store, { resource: `${server.base}/mcp`, issuer: server.issuer })
+  t.after(async () => { oauth.dispose(); await server.close() })
+  const { authorizationUrl } = await oauth.start()
+  assert.equal(new URL(authorizationUrl).origin, server.issuer)
+  assert.equal((await server.authorize(authorizationUrl)).status, 200)
+  assert.equal(await oauth.accessToken(), 'access-1')
+  store.grant!.expiresAt = 0
+  assert.equal(await oauth.accessToken(), 'access-2')
+  await oauth.disconnect()
+  assert.equal(server.stats.revocations, 1)
+  assert.equal(server.stats.wrongOriginRegistrations, 0)
+})
+
+test('failed discovery stays retryable without caching or registering at the MCP origin', async t => {
+  const server = await fixture({ separateIssuer: true })
+  const store = new MemoryStore()
+  const oauth = new KnowraOAuth(store, { resource: `${server.base}/mcp`, issuer: server.issuer })
+  t.after(async () => { oauth.dispose(); await server.close() })
+  server.setResourceMetadataAvailable(false)
+  await assert.rejects(oauth.start(), /Could not start/)
+  assert.equal(store.grant?.discovery, undefined)
+  assert.equal(server.stats.wrongOriginRegistrations, 0)
+  server.setResourceMetadataAvailable(true)
+  const { authorizationUrl } = await oauth.start()
+  assert.equal((await server.authorize(authorizationUrl)).status, 200)
+  assert.equal(await oauth.accessToken(), 'access-1')
+})
+
+test('reconnect repairs an older same-origin fallback cached with correct resource metadata', async t => {
+  const server = await fixture({ separateIssuer: true })
+  const store = new MemoryStore()
+  store.grant = { version: 1, resource: `${server.base}/mcp`, discovery: {
+    authorizationServerUrl: `${server.base}/`,
+    resourceMetadata: { resource: `${server.base}/mcp`, authorization_servers: [server.issuer] },
+  } }
+  const oauth = new KnowraOAuth(store, { resource: `${server.base}/mcp`, issuer: server.issuer })
+  t.after(async () => { oauth.dispose(); await server.close() })
+  const { authorizationUrl } = await oauth.start()
+  assert.equal(new URL(authorizationUrl).origin, server.issuer)
+  assert.equal(store.grant?.discovery?.authorizationServerUrl, server.issuer)
+  assert.equal(server.stats.wrongOriginRegistrations, 0)
+  assert.equal((await server.authorize(authorizationUrl)).status, 200)
+})
+
+test('metadata body timeout does not poison the next authorization attempt', async t => {
+  const server = await fixture({ separateIssuer: true })
+  const store = new MemoryStore()
+  let timeout = true
+  const oauth = new KnowraOAuth(store, {
+    resource: `${server.base}/mcp`, issuer: server.issuer,
+    fetch: async (input, init) => {
+      const response = await fetch(input, init)
+      if (timeout && String(input).includes('/.well-known/oauth-protected-resource')) {
+        timeout = false
+        response.json = async () => { await response.body?.cancel(); throw new DOMException('Metadata body timeout', 'TimeoutError') }
+      }
+      return response
+    },
+  })
+  t.after(async () => { oauth.dispose(); await server.close() })
+  await assert.rejects(oauth.start(), /Could not start/)
+  assert.equal(store.grant?.discovery, undefined)
+  const { authorizationUrl } = await oauth.start()
+  assert.equal((await server.authorize(authorizationUrl)).status, 200)
+  assert.equal(server.stats.wrongOriginRegistrations, 0)
+})
+
+test('resource metadata cannot redirect authorization to an unexpected issuer', async t => {
+  const server = await fixture({ separateIssuer: true })
+  const store = new MemoryStore()
+  const destinations: string[] = []
+  const oauth = new KnowraOAuth(store, {
+    resource: `${server.base}/mcp`, issuer: server.issuer,
+    fetch: async (input, init) => {
+      destinations.push(String(input))
+      return new Response(JSON.stringify({ resource: `${server.base}/mcp`, authorization_servers: ['https://untrusted.example'] }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    },
+  })
+  t.after(async () => { oauth.dispose(); await server.close() })
+  await assert.rejects(oauth.start(), /Could not start/)
+  assert.equal(destinations.length, 1)
+  assert.equal(store.grant?.discovery, undefined)
+  assert.equal(server.stats.registrations, 0)
+})

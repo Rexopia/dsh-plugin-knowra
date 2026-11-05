@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { createServer, type IncomingMessage, type ServerResponse, type Server } from 'node:http'
 import type { Grant, GrantStore } from '../src/oauth.ts'
 
 export class MemoryStore implements GrantStore {
@@ -17,16 +17,19 @@ export class MemoryStore implements GrantStore {
   async remove() { await this.modify(async () => undefined) }
 }
 
-export async function fixture() {
+export async function fixture(options: { separateIssuer?: boolean } = {}) {
   let base = ''
+  let issuer = ''
+  let authorizationServer: Server | undefined
   let tokenId = 0
   const clients = new Map<string, { redirect_uris: string[] }>()
   const codes = new Map<string, { challenge: string; redirect: string }>()
   const refreshTokens = new Set<string>()
   const accessTokens = new Set<string>()
-  const stats = { registrations: 0, exchanges: 0, refreshes: 0, revocations: 0, calls: [] as string[], headers: [] as string[] }
+  const stats = { registrations: 0, wrongOriginRegistrations: 0, exchanges: 0, refreshes: 0, revocations: 0, calls: [] as string[], headers: [] as string[] }
   let revokeAvailable = true
   let refreshAvailable = true
+  let resourceMetadataAvailable = true
   const token = () => {
     tokenId++
     const access_token = `access-${tokenId}`, refresh_token = `refresh-${tokenId}`
@@ -39,11 +42,16 @@ export async function fixture() {
     stats.headers.push(String(req.headers.authorization ?? ''))
     const json = (value: unknown, status = 200) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(value)) }
     if (url.pathname === '/.well-known/oauth-protected-resource/mcp' || url.pathname === '/.well-known/oauth-protected-resource') {
-      json({ resource: `${base}/mcp`, authorization_servers: [base], scopes_supported: ['scout:access', 'usage:read', 'offline_access'] }); return
+      if (!resourceMetadataAvailable) { json({ error: 'temporarily_unavailable' }, 503); return }
+      json({ resource: `${base}/mcp`, authorization_servers: [issuer], scopes_supported: ['scout:access', 'usage:read', 'offline_access'] }); return
+    }
+    if (options.separateIssuer && req.headers.host === new URL(base).host && url.pathname !== '/mcp') {
+      if (url.pathname === '/register' && req.method === 'POST') stats.wrongOriginRegistrations++
+      json({ error: 'not_found' }, 404); return
     }
     if (url.pathname === '/.well-known/oauth-authorization-server') {
-      json({ issuer: base, authorization_endpoint: `${base}/authorize`, token_endpoint: `${base}/token`,
-        registration_endpoint: `${base}/register`, revocation_endpoint: `${base}/oauth/revoke`,
+      json({ issuer, authorization_endpoint: `${issuer}/authorize`, token_endpoint: `${issuer}/token`,
+        registration_endpoint: `${issuer}/register`, revocation_endpoint: `${issuer}/oauth/revoke`,
         response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token'],
         token_endpoint_auth_methods_supported: ['none'], code_challenge_methods_supported: ['S256'],
         authorization_response_iss_parameter_supported: true,
@@ -68,7 +76,7 @@ export async function fixture() {
       const callback = new URL(redirect)
       callback.searchParams.set('state', url.searchParams.get('state')!)
       callback.searchParams.set('code', code)
-      callback.searchParams.set('iss', base)
+      callback.searchParams.set('iss', issuer)
       res.writeHead(302, { Location: callback.href }); res.end(); return
     }
     if (url.pathname === '/token') {
@@ -114,8 +122,15 @@ export async function fixture() {
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
   const address = server.address() as { port: number }
   base = `http://127.0.0.1:${address.port}`
+  issuer = base
+  if (options.separateIssuer) {
+    authorizationServer = createServer((req, res) => { void handle(req, res).catch(() => { res.writeHead(500); res.end() }) })
+    await new Promise<void>(resolve => authorizationServer!.listen(0, '127.0.0.1', resolve))
+    issuer = `http://127.0.0.1:${(authorizationServer.address() as { port: number }).port}`
+  }
   return {
-    base, stats, refreshTokens, accessTokens,
+    base, issuer, stats, refreshTokens, accessTokens,
+    setResourceMetadataAvailable: (value: boolean) => { resourceMetadataAvailable = value },
     setRevokeAvailable: (value: boolean) => { revokeAvailable = value },
     setRefreshAvailable: (value: boolean) => { refreshAvailable = value },
     async authorize(url: string) {
@@ -124,6 +139,10 @@ export async function fixture() {
       if (!callback) throw new Error('No callback')
       return fetch(callback)
     },
-    async close() { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())) },
+    async close() {
+      await Promise.all((authorizationServer ? [server, authorizationServer] : [server]).map(async instance => {
+        instance.closeAllConnections(); await new Promise<void>(resolve => instance.close(() => resolve()))
+      }))
+    },
   }
 }

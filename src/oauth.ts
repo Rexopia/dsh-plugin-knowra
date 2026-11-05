@@ -1,7 +1,8 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http'
 import {
-  auth, type OAuthClientProvider, type OAuthDiscoveryState,
+  auth, discoverAuthorizationServerMetadata, discoverOAuthProtectedResourceMetadata,
+  type OAuthClientProvider, type OAuthDiscoveryState,
   type StoredOAuthClientInformation, type StoredOAuthTokens, type AuthProvider,
 } from '@modelcontextprotocol/client'
 
@@ -74,7 +75,7 @@ export class KnowraOAuth {
       const url = new URL(input instanceof Request ? input.url : String(input))
       if (!origins.has(url.origin) || url.username || url.password) throw new Error('Untrusted authorization endpoint')
       const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
-      headers.set('User-Agent', 'dsh-plugin-knowra/0.2.4')
+      headers.set('User-Agent', 'dsh-plugin-knowra/0.2.5')
       const resource = new URL(this.resource)
       // Scout may generate a report during the tool request. Keep its existing
       // two-minute budget; discovery and token requests use the shorter limit.
@@ -128,6 +129,7 @@ export class KnowraOAuth {
     try {
       await this.transaction(async grant => {
         grant.redirectUrl = attempt.redirectUrl
+        await this.prepareDiscovery(grant)
         const result = await auth(this.provider(grant, attempt), {
           serverUrl: this.resource, scope: SCOPES, fetchFn: this.fetch, forceReauthorization: true,
         })
@@ -157,6 +159,7 @@ export class KnowraOAuth {
       const code = url.searchParams.get('code')
       if (url.searchParams.has('error') || !code || url.searchParams.getAll('code').length !== 1) throw new Error('Authorization declined')
       await this.transaction(async grant => {
+        await this.prepareDiscovery(grant)
         const result = await auth(this.provider(grant, attempt), {
           serverUrl: this.resource, scope: SCOPES, authorizationCode: code,
           iss: url.searchParams.get('iss') ?? undefined, fetchFn: this.fetch,
@@ -186,6 +189,7 @@ export class KnowraOAuth {
         return
       }
       try {
+        await this.prepareDiscovery(grant)
         const result = await auth(this.provider(grant), { serverUrl: this.resource, scope: SCOPES, fetchFn: this.fetch })
         if (result === 'AUTHORIZED') { value = grant.tokens?.access_token; this.notice = null }
       } catch (error) {
@@ -252,6 +256,32 @@ export class KnowraOAuth {
     if (failure) throw failure
   }
 
+  private trustedDiscovery(discovery?: OAuthDiscoveryState): boolean {
+    return discovery?.authorizationServerUrl === this.issuer
+      && discovery.authorizationServerMetadata?.issuer === this.issuer
+      && discovery.resourceMetadata?.resource === this.resource
+      && discovery.resourceMetadata.authorization_servers?.includes(this.issuer) === true
+  }
+
+  private async prepareDiscovery(grant: Grant): Promise<void> {
+    if (this.trustedDiscovery(grant.discovery)) return
+    if (grant.discovery) {
+      // Older versions persisted the SDK's same-origin fallback after discovery
+      // failed. Discard credentials bound to that unexpected authorization server.
+      delete grant.discovery; delete grant.client; delete grant.tokens; delete grant.expiresAt
+    }
+    // Knowra's resource and authorization servers are separate. A failed metadata
+    // request must remain retryable, rather than selecting the MCP host as issuer.
+    const resourceMetadata = await discoverOAuthProtectedResourceMetadata(this.resource, {}, this.fetch)
+    if (resourceMetadata.resource !== this.resource || !resourceMetadata.authorization_servers?.includes(this.issuer)) {
+      throw new Error('Unexpected authorization resource metadata')
+    }
+    const authorizationServerMetadata = await discoverAuthorizationServerMetadata(this.issuer, { fetchFn: this.fetch })
+    const discovery = { authorizationServerUrl: this.issuer, resourceMetadata, authorizationServerMetadata }
+    if (!this.trustedDiscovery(discovery)) throw new Error('Unexpected authorization server metadata')
+    grant.discovery = discovery
+  }
+
   private provider(grant: Grant, attempt?: Attempt): OAuthClientProvider {
     return {
       get redirectUrl() { return attempt?.redirectUrl ?? grant.redirectUrl },
@@ -280,7 +310,10 @@ export class KnowraOAuth {
         if (resource && resource !== this.resource) throw new Error('Unexpected authorization resource')
         return new URL(this.resource)
       },
-      saveDiscoveryState: discovery => { grant.discovery = discovery },
+      saveDiscoveryState: discovery => {
+        if (!this.trustedDiscovery(discovery)) throw new Error('Unexpected authorization server metadata')
+        grant.discovery = discovery
+      },
       discoveryState: () => grant.discovery,
       invalidateCredentials: scope => {
         if (scope === 'all' || scope === 'client') delete grant.client
