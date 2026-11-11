@@ -78,6 +78,8 @@ export function KnowraPage({ remote: api, language }: PageProps) {
   }
 
   return <section aria-label={t.title} style={{ padding: '4px 0', maxWidth: 560, lineHeight: 1.6 }}>
+    {/* DSH draws borders even when our localized detail document is empty. */}
+    <style>{'[data-plugin-detail="dsh-plugin-knowra"] [data-detail-document] { display: none; }'}</style>
     <p role="status" aria-live="polite" style={{
       margin: 0,
       ...(state?.status === 'disconnected' && { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)' }),

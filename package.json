@@ -20,7 +20,7 @@
     "prepack": "npm run build",
     "test:compat": "node scripts/test-compat.mjs"
   },
-  "description": "Knowra for DeepSeek Harness: search arXiv papers by topic, author or exact dates, and read Scout reports on methods, evidence and limitations.",
+  "description": "Search for papers in DeepSeek Harness. Connect Knowra to read Scout reports on methods, evidence, and limitations.",
   "license": "MIT",
   "author": "Knowra <support@knowra.app>",
   "homepage": "https://knowra.app/mcp",
