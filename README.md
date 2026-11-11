@@ -32,7 +32,7 @@ Try: *"Find papers on memory for LLM agents from the past week, shortlist the re
 
 ## Connect your Knowra account
 
-Search works right away without an account. To read Scout reports, connect your existing Knowra account from the plugin page.
+We recommend connecting your Knowra account after installation so you can read Scout reports and check your Scout allowance.
 Free accounts include **5 new Scout reports per day**, resetting at **00:00 UTC**.
 Connection guide: https://knowra.app/mcp#connect.
 
@@ -51,6 +51,8 @@ Knowra receives the tool requests your agent sends, not your conversation. See t
 
 ## Development and verification
 
+Version 0.2.6 makes **Connect Knowra** easier to find on the plugin page and keeps the full setup guide in this README.
+
 Version 0.2.5 keeps authorization discovery bound to Knowra's separate OAuth server. A failed discovery request can be retried, and reconnecting automatically repairs an older cached MCP-origin fallback. After upgrading, open **Plugins → Knowra → Connect Knowra** again; deleting your credential files is not required.
 
 ```sh
@@ -67,7 +69,7 @@ Tests exercise real local HTTP authorization/token endpoints, PKCE/state validat
 
 `test:compat` installs the selected full DSH runtime in a temporary directory, checks its installer compatibility rules and built host metadata, then type-checks and runs the same tests against its actual host packages. CI covers both listed runtimes on Linux and Windows. To reuse an existing isolated runtime, set `KNOWRA_COMPAT_RUNTIME_DIR` to its directory.
 
-For a local Web profile, install the resulting tarball with `dsh plugin --profile web add /absolute/path/dsh-plugin-knowra-0.2.5.tgz`. Desktop uses its own profile: install through its Plugins page, or fully quit Desktop and use the Desktop-provided CLI with `--profile desktop`. A fresh real Desktop connection still needs sign-in and approval through the deployed Knowra page.
+For a local Web profile, install the resulting tarball with `dsh plugin --profile web add /absolute/path/dsh-plugin-knowra-0.2.6.tgz`. Desktop uses its own profile: install through its Plugins page, or fully quit Desktop and use the Desktop-provided CLI with `--profile desktop`. A fresh real Desktop connection still needs sign-in and approval through the deployed Knowra page.
 
 ## Contact
 
@@ -84,7 +86,7 @@ For a local Web profile, install the resulting tarball with `dsh plugin --profil
 
 **安装**：需要 DSH **0.2.0-rc.2 或更新的 0.2.x 版本**。DSH → 插件 → 添加插件，填 `dsh-plugin-knowra`，安装并启用。
 
-**检索**不需要账号，装好即可用。**读 Scout**：打开「插件 → Knowra」，点击「连接 Knowra」，在浏览器中登录并允许授权，然后返回 DSH。浏览器未自动打开时，点击插件页的授权链接。
+**连接 Knowra**：建议安装并启用后，打开「插件 → Knowra」，点击「连接 Knowra」。在浏览器中登录并授权后，返回 DSH 即可读取 Scout 报告和查看额度。浏览器未自动打开时，点击插件页的授权链接。
 
 免费账户每天可读取 **5 份新的 Scout 报告**，**UTC 00:00** 重置。接入指南：https://knowra.app/mcp#connect。
 

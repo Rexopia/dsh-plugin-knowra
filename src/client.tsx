@@ -7,7 +7,7 @@ export const inject = ['slots', 'remote']
 type PageProps = { remote: TypertClientRemote; language: () => string }
 const strings = {
   en: {
-    title: 'Knowra account', search: 'Paper search works without an account. Connect Knowra to read Scout reports and check your allowance.',
+    title: 'Knowra account',
     connect: 'Connect Knowra', disconnect: 'Disconnect', pending: 'Finish signing in and approving access in your browser.',
     connected: 'Knowra connected', disconnected: 'Not connected', continue: 'Continue authorization in your browser',
     failed: 'Authorization was not completed. Try connecting again.', expired: 'Authorization expired. Connect Knowra again.',
@@ -16,7 +16,7 @@ const strings = {
     account: 'Manage your Knowra account', privacy: 'Privacy policy', retry: 'Retry',
   },
   zh: {
-    title: 'Knowra 账号', search: '论文检索无需登录。连接 Knowra 后即可阅读 Scout 报告、查看剩余额度。',
+    title: 'Knowra 账号',
     connect: '连接 Knowra', disconnect: '断开连接', pending: '请在浏览器中完成登录并允许授权。',
     connected: '已连接 Knowra', disconnected: '尚未连接', continue: '在浏览器中继续授权',
     failed: '未能完成授权，请重新连接。', expired: '授权已过期，请重新连接 Knowra。',
@@ -77,20 +77,28 @@ export function KnowraPage({ remote: api, language }: PageProps) {
     } catch { setError(true) } finally { setBusy(false) }
   }
 
-  return <section aria-label={t.title} style={{ padding: '20px 0', maxWidth: 560, lineHeight: 1.6 }}>
-    <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>{t.title}</h2>
-    <p>{t.search}</p>
-    <p role="status" aria-live="polite">{!state ? t.loading : state.status === 'connected' ? t.connected : state.status === 'authorizing' ? t.pending : t.disconnected}</p>
+  return <section aria-label={t.title} style={{ padding: '4px 0', maxWidth: 560, lineHeight: 1.6 }}>
+    {/* DSH draws borders even when our localized detail document is empty. */}
+    <style>{'[data-plugin-detail="dsh-plugin-knowra"] [data-detail-document] { display: none; }'}</style>
+    <p role="status" aria-live="polite" style={{
+      margin: 0,
+      ...(state?.status === 'disconnected' && { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)' }),
+    }}>{!state ? t.loading : state.status === 'connected' ? t.connected : state.status === 'authorizing' ? t.pending : t.disconnected}</p>
     {state?.notice && <p role="alert">{t[state.notice]}</p>}
     {error && <p role="alert">{t.unavailable}</p>}
     {state?.server === 'unavailable' && <p>{t.server}</p>}
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-      {state?.status === 'disconnected' && <button type="button" disabled={busy} onClick={() => void connect()}>{t.connect}</button>}
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: state?.status === 'disconnected' ? 0 : 8 }}>
+      {state?.status === 'disconnected' && <button type="button" disabled={busy} onClick={() => void connect()} style={{
+        minHeight: 44, padding: '0 20px', border: 0, borderRadius: 8, font: 'inherit', fontWeight: 600,
+        color: 'var(--dsw-alias-label-primary-foreground, #fff)',
+        background: 'var(--dsw-alias-button-primary-fill, #2454ce)',
+        cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.65 : 1,
+      }}>{t.connect}</button>}
       {state && state.status !== 'disconnected' && <button type="button" disabled={busy} onClick={() => void disconnect()}>{t.disconnect}</button>}
       {!state && error && <button type="button" disabled={busy} onClick={() => void read().catch(() => setError(true))}>{t.retry}</button>}
     </div>
     {url && <p><a href={url} target="_blank" rel="noopener noreferrer">{t.continue}</a></p>}
-    <p style={{ marginTop: 20 }}><a href="https://knowra.app/account" target="_blank" rel="noopener noreferrer">{t.account}</a>{' · '}<a href="https://knowra.app/privacy" target="_blank" rel="noopener noreferrer">{t.privacy}</a></p>
+    {state?.status === 'connected' && <p style={{ margin: '12px 0 0' }}><a href="https://knowra.app/account" target="_blank" rel="noopener noreferrer">{t.account}</a>{' · '}<a href="https://knowra.app/privacy" target="_blank" rel="noopener noreferrer">{t.privacy}</a></p>}
   </section>
 }
 

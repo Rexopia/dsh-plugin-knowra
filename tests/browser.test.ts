@@ -76,7 +76,10 @@ test('built desktop page uses real Cordis injection and DSH Remote for status, a
       res.end(req.url === '/harness.js' ? harness.outputFiles[0].text : client)
     } else {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-      res.end('<!doctype html><html lang="zh"><style>body{font:15px system-ui;margin:40px;color:#222}button{padding:9px 16px;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer}a{color:#18644b}</style><div id="root"></div><script src="/harness.js"></script><script src="/client.js"></script></html>')
+      res.end(`<!doctype html><html lang="zh">
+        <style>body{font:15px system-ui;margin:40px;color:#222}button{padding:9px 16px;border:1px solid #ccc;border-radius:8px;background:white;cursor:pointer}a{color:#18644b}[data-detail-document]{border-block:1px solid;padding:12px}</style>
+        <div data-plugin-detail="dsh-plugin-knowra"><section data-detail-document></section><div id="root"></div></div>
+        <script src="/harness.js"></script><script src="/client.js"></script></html>`)
     }
   })
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -93,6 +96,7 @@ test('built desktop page uses real Cordis injection and DSH Remote for status, a
   })
   assert.deepEqual(await page.evaluate(() => (window as any).descriptors), ['knowra/status', 'knowra/connect', 'knowra/disconnect'])
   assert.equal(await page.evaluate(() => (window as any).slot), 'dsh-plugin-knowra')
+  assert.equal(await page.locator('[data-detail-document]').isVisible(), false)
   // Keep browser authorization inside this isolated test; never navigate to a real account.
   await browser.contexts()[0].route('https://oauth.knowra.app/**', route => route.fulfill({ body: 'Test authorization page' }))
   await page.getByRole('button', { name: '连接 Knowra', exact: true }).click()
