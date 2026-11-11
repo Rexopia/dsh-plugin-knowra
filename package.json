@@ -47,6 +47,8 @@
     "cordis.patch.yml",
     "lib/",
     "icon.png",
+    "locale/en.json",
+    "plugin-detail.md",
     "README.md",
     "LICENSE"
   ],
