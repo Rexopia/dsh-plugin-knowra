@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-knowra",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
